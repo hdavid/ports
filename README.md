@@ -8,7 +8,8 @@ It will convert them into CV/Trigger and gate on the MAX11300 chip or MIDI messa
 
 ## Install
 
-get your raspberry pi booted up and connected to internet, in order to download the needed packages. Then on your raspberry pi run `git clone https://github.com/hdavid/ports`
+get your raspberry pi booted up and connected to internet, in order to download the needed packages. 
+Then on your raspberry pi run `git clone https://github.com/hdavid/ports.git`
 
 Then from the ports directory `run sudo bash ./install.sh`
 
