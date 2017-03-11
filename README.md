@@ -68,7 +68,7 @@ other input values are in the range [0 1] and mapped to the cv voltage.
 
 for now the MIDI device is hardcoded in the code to be the first usb device plugged.
 
-`/midi/<channel>/<cc>/<midiCC> <value>`
+`/midi/<channel>/cc/<midiCC> <value>`
 
 `/midi/<channel]>/noteOn/<noteNumber> <velocity>`
 
