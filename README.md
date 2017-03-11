@@ -40,7 +40,7 @@ network={
 ```
 
 
-## Runing
+## Running
 Port must run as root on order to access SPI bus used to communicate with the MAX11300.
 Note that ports is started automatically at boot time. (done by ./install.sh)
 
