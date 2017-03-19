@@ -4,7 +4,7 @@
 
 ### install needed packages
 echo Install needed packages
-sudo apt-get update > /dev/null && sudo apt-get install -y --force-yes dnsmasq git liblo-dev > /dev//null
+sudo apt-get update > /dev/null && sudo apt-get install -y --force-yes dnsmasq git liblo-dev  > /dev//null
 ### prevent dhcp to start at boot
 update-rc.d -f dnsmasq remove /dev/null
 
@@ -52,6 +52,7 @@ if [[ $inet == 169*  ]];
 then
     # noconnection. access point
     echo "Creating WIFI Access Point"
+    ifconfig wlan0 down
     ifconfig wlan0 192.168.1.1 netmask 255.255.255.0 up
     sudo /etc/init.d/dnsmasq start
     echo "wifi network created ssid: ports key: portsports"
@@ -63,11 +64,13 @@ exit 0
 DELIM
 
 echo install bcm2835 lib
+rm -rf bcm2835-1.52*
 wget --quiet http://www.airspayce.com/mikem/bcm2835/bcm2835-1.52.tar.gz > /dev/null
 tar -xzf bcm2835-1.52.tar.gz > /dev/null
 cd bcm2835-1.52
 ./configure > /dev/null && make > /dev/null && make install > /dev/null
 cd ..
+rm -rf bcm2835-1.52*
 
 echo compile ports
 g++ \
@@ -79,7 +82,7 @@ g++ \
 	-std=c++11 \
 	-std=c++0x \
 	-pthread && \
-	mv -r ports /usr/local/bin
+	mv ports /usr/local/bin
 
 
 

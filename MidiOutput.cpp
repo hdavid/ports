@@ -62,17 +62,17 @@ void MidiOutput::message(const char* path, int offset, float value) {
 	if (strncmp(path+offset, "/cc/", 3)==0) {
 		offset += 4;
 		int number = parseInt(path, offset);
-		//std::cout << "channel:" << channel << "cc:" << number << " value:"<< value << " \n" ;
+		//std::cout << "channel:" << channel << " cc:" << number << " value:"<< value << " \n" ;
 		cc(channel,number,value);
 	} else if (strncmp(path+offset, "/noteOn/", 8)==0) {
 		offset += 8;
 		int note = parseInt(path, offset);
-		//std::cout << "channel:" << channel << "noteOn:" << note << " value:"<< value << " \n" ;
+		//std::cout << "channel:" << channel << " noteOn:" << note << " value:"<< value << " \n" ;
 		noteOn(channel,note,value);
 	} else if (strncmp(path+offset, "/noteOff/", 9)==0) {
 		offset += 9;
 		int note = parseInt(path, offset);
-		//std::cout << "channel:" << channel << "noteOff:" << note << " value:"<< value << " \n" ;
+		//std::cout << "channel:" << channel << " noteOff:" << note << " value:"<< value << " \n" ;
 		noteOff(channel,note,value);
 	}
 }

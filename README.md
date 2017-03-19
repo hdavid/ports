@@ -1,22 +1,39 @@
 # Ports
 Ports is an OSC to CV/Gate and MIDI converter.
-Built to run on raspberry pi zero w (or other variants). 
-It listen for incoming OSC messages on port 5000.
+Built to run on raspberry pi zero w (or other raspberry pi variants). 
+It listens for incoming OSC messages on port 5000.
 
-It will convert them into CV/Trigger and gate on the MAX11300 chip or MIDI messages.
+It will convert them into CV/Trigger and gate on the MAX11300 chip or MIDI messages (see API section of this readme)
 
 
-## Install
+## Installation
 
-get your raspberry pi booted up and connected to internet, in order to download the needed packages. 
-Then on your raspberry pi run `git clone https://github.com/hdavid/ports.git`
+During this procedure we assume that you have access to your pi, using a screen + keyboard, or over SSH.
+
+### get your raspberry pi setup:
+- download the raspbian lite image. you only need the lite version (no need for X windows and similar things)  https://www.raspberrypi.org/downloads/raspbian
+- Install raspbian on your pi. https://www.raspberrypi.org/documentation/installation/installing-images/
+- get your pi connected on the internet
+  - use a wired ethernet connection. just plug the pi into your router.
+  - or setup wifi as described https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md
+
+Ports could work on other linux flavours such as osmc etc, but the automatic WLAN fallback might not work as expected as WLAN is distro specific.
+
+`/install.sh` (below) assumes the system is a raspbian jessie.
+
+
+### install ports
+
+Clone ports repository `git clone https://github.com/hdavid/ports.git`
+
+- if git is not installed, just run `sudo apt-get update && sudo apt-get install git`
 
 Then from the ports directory run `sudo bash ./install.sh`
 
 This will:
-- install the SPI broadcom drivers
-- install liblo osc lib
-- install needed packages
+- download and install the SPI broadcom drivers
+- install liblo osc lib package
+- install dnsmsaq package (dns, dhcp for accesspoint mode) 
 - compile ports
 - configure fall back access point ssid: `ports`, psk: `portsports`
 - configure ports to start at boot time automatically
@@ -67,17 +84,17 @@ other input values are in the range [0 1] and mapped to the cv voltage.
 
 ### MIDI Output
 
-for now the MIDI device is hardcoded in the code to be the first usb device plugged.
+for now the MIDI device is hardcoded in the code to be the first usb device plugged. `/dev/snd/midiC1D0` is easily changeable in Ports.cpp.
 
 `/midi/<channel>/cc/<midiCC> <value>`
 
-`/midi/<channel]>/noteOn/<noteNumber> <velocity>`
+`/midi/<channel>/noteOn/<noteNumber> <velocity>`
 
 `/midi/<channel>/noteOff/<noteNumber> <velocity>`
 
 channel: 1-16
 
-note, cc, velocity, value : 1-127
+noteNumber, midiCC, velocity, value : 1-127
 
 
 ## Possible Improvements
