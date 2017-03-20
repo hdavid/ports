@@ -66,4 +66,6 @@ class Ports {//: osc::OscPacketListener  {
   
 };
 
+void ports_main();
+
 #endif  // PORTS_H

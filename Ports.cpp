@@ -294,7 +294,7 @@ int startOSCLibLo(const char* port) {
 
 
 
-main() {
+void ports_main() {
 	std::cout << "Ports starting\n";
     //std::thread threadLibLo(startOSCLibLo, "5002");
 	//std::thread threadOSCPACK(startOSCPACK, 1);

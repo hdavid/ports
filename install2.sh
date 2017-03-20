@@ -30,6 +30,7 @@ g++ \
 
 # Install
 echo Install ports
+chmod +x support/init.d/ports
 sudo cp support/init.d/ports /etc/init.d/ports
 echo Enable port at boot
 sudo update-rc.d ports defaults
