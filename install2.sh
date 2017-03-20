@@ -1,9 +1,11 @@
 #!/bin/bash
 
+# set hostname
+hostnamectl set-hostname ports
+
 # Install needed packages
 echo Install needed packages
 sudo apt-get update > /dev/null && sudo apt-get install -y --force-yes liblo-dev  > /dev//null
-
 
 # Broadcom driver
 echo install bcm2835 lib
@@ -41,5 +43,5 @@ echo Install pink
 #git clone https://github.com/hdavid/pink-0.git
 #cd pink-0
 #git checkout ports
-#./install.sh
+#./install.sh no-ui
 #cd ..
