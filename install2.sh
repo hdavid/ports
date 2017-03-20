@@ -40,8 +40,8 @@ sudo update-rc.d ports defaults
  
 # Pink
 echo Install pink
-#git clone https://github.com/hdavid/pink-0.git
-#cd pink-0
-#git checkout ports
-#./install.sh no-ui
-#cd ..
+git clone https://github.com/hdavid/pink-0.git
+cd pink-0
+git checkout ports
+./install.sh no-ui
+cd ..
