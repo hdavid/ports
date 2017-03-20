@@ -1,8 +1,6 @@
 #include <memory>
 #include <tuple>
 
-#ifdef __linux__
-
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -13,7 +11,6 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#endif // __linux__
 
 #include "Ports.h"
 
@@ -22,26 +19,21 @@
 
 //--------------------------------------------------------------------------------------------------
 
-#ifdef __linux__
 
 int pidFilehandle;
 
-#endif // __linux__
 
 //--------------------------------------------------------------------------------------------------
 
-#ifdef __linux__
 
 void daemonShutdown()
 {
   close(pidFilehandle);
 }
 
-#endif // __linux__
 
 //--------------------------------------------------------------------------------------------------
 
-#ifdef __linux__
 
 void signalHandler(int sig)
 {
@@ -62,16 +54,11 @@ void signalHandler(int sig)
   }
 }
 
-#endif // __linux__
 
 //--------------------------------------------------------------------------------------------------
 
 static void daemonize(const char* runDir_, const char* pidFile_)
 {
-#ifndef __linux__
-  std::ignore = runDir_;
-  std::ignore = pidFile_;
-#else
   /* Our process ID and Session ID */
   pid_t pid, sid;
   int i;
@@ -173,7 +160,6 @@ static void daemonize(const char* runDir_, const char* pidFile_)
 
   /* write pid to lockfile */
   write(pidFilehandle, str, strlen(str));
-#endif
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -183,34 +169,22 @@ class ScopedLog
 public:
   ScopedLog()
   {
-#ifdef __linux__
     setlogmask(LOG_UPTO(LOG_INFO));
     openlog(DAEMON_NAME, LOG_CONS | LOG_PERROR, LOG_USER);
-#endif // __linux__
   }
   ~ScopedLog()
   {
-#ifdef __linux__
     closelog();
-#endif // __linux__
   }
 
   void info(const char* message_)
   {
-#ifdef __linux__
     syslog(LOG_INFO, message_);
-#else
-    std::cout << DAEMON_NAME << ": " << message_ << std::endl;
-#endif
   }
 
   void exception(const std::exception& e_)
   {
-#ifdef __linux__
     syslog(LOG_ERR, "ERROR: An exception occurred  (%s)", e_.what());
-#else
-    std::cerr << "An exception occurred: " << e_.what() << std::endl;
-#endif
   }
 };
 
