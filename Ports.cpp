@@ -303,7 +303,6 @@ void ports_main() {
     ualarm(PORTS_TIMER_PERIOD, PORTS_TIMER_PERIOD);
     startOSCLibLo("5000");
  	std::cout << "Ports ending.\n";
-	return 0;
 }
 
 
