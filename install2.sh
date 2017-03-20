@@ -21,7 +21,7 @@ rm -rf bcm2835-1.52*
 echo compile ports
 g++ \
 	-o ports \
-	Pixi.cpp Ports.cpp MidiOutput.cpp \
+	Pixi.cpp Ports.cpp MidiOutput.cpp main.cpp\
 	-l bcm2835 \
 	-l lo \
 	-I /usr/include/ \
