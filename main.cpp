@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <sys/signal.h>
 
 
 #include "Ports.h"
