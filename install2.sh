@@ -11,7 +11,7 @@ rm -rf bcm2835-1.52*
 wget --quiet http://www.airspayce.com/mikem/bcm2835/bcm2835-1.52.tar.gz > /dev/null
 tar -xzf bcm2835-1.52.tar.gz > /dev/null
 cd bcm2835-1.52
-./configure > /dev/null && make > /dev/null && make install > /dev/null
+./configure > /dev/null && make > /dev/null && sudo make install > /dev/null
 cd ..
 rm -rf bcm2835-1.52*
 
