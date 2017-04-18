@@ -1,6 +1,6 @@
-/*Pixi.h - Library for Analog shield with Maxim PIXI A/D chip.
-  Created by Wolfgang Friedrich, July 29. 2014.
-  Will be released into the public domain.
+/*
+  Pixi.h - Library Maxim PIXI A/D chip.
+  (heavily) inspired by work of Wolfgang Friedrich
 */
 
 #ifndef PIXI_H
@@ -9,14 +9,15 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #define PIXI_NUM_CHANNELS 20
 
 
 class Pixi {
+
   public:
     Pixi();
     ~Pixi();
+
     void setChannelValue(int channel, float value, bool isInput, bool isBipolar);
     void setChannelMode(int channel, bool isInput, bool isBipolar, bool force);
     uint16_t getInput(int channel);
@@ -26,6 +27,7 @@ class Pixi {
     float readTemperature(int temp_channel);
     void update();
     void configure();
+
   private:
     uint16_t readRegister (uint8_t address);
     void writeRegister (uint8_t address, uint16_t value);
@@ -33,17 +35,17 @@ class Pixi {
     void writeAnalog(int channel, uint16_t value);
 	uint16_t inputs[PIXI_NUM_CHANNELS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	uint16_t outputs[PIXI_NUM_CHANNELS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	uint16_t outputLastSentValues[PIXI_NUM_CHANNELS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	bool channelIsBipolar[PIXI_NUM_CHANNELS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     bool channelIsInput[PIXI_NUM_CHANNELS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	
-  //  int _channel;
-  //  int _temp_channel;
+
 };
 
 
 // R/WB bit
 #define PIXI_READ                  0x01
 #define PIXI_WRITE                 0x00
+
 // Register Table (each register is 16 bit wide)
 #define PIXI_DEVICE_ID                  0x00
 #define PIXI_INTERRUPT                  0x01
@@ -188,8 +190,6 @@ class Pixi {
 #define FUNCPRM_AVR_INV            0x0800
 #define FUNCID_MODE0_HIGHZ         0x0000
 
-
-
 // reg 0x40-53  ADC data
 #define ADCDAT          0x0FFF
 // reg 0x60-73  DAC data
@@ -255,12 +255,10 @@ class Pixi {
 #define CH_0_TO_2P5_0_TO_10P     0x0006
 #define CH_RES_2                 0x0007
 
-
+// Temperature
 #define TEMP_CHANNEL_INT	0x0
 #define TEMP_CHANNEL_EXT0	0x1
 #define TEMP_CHANNEL_EXT1	0x2
-
-
 
 
 #endif  // PIXI_H/

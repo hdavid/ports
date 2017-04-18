@@ -1,30 +1,20 @@
 
-rm -rf pa_stable_v190600_20161030.tgz portaudio
-wget http://www.portaudio.com/archives/pa_stable_v190600_20161030.tgz
-tar -xzf pa_stable_v190600_20161030.tgz
-cd portaudio
+sudo apt-get install -y --force-yes libasound-dev librtaudio-dev cmake wiringpi lighttpd
+sudo cp -r pink-0/support/html/ /var/www/html/
+sudo cp support/index.html /var/www/html
+git clone https://github.com/shaduzlabs/pink-0.git
+cd pink-0
+git checkout develop
+git submodule update --init --recursive
+
+cp ../support/main.cpp src/
+
+echo -e "[ \033[1m\033[96mpink\033[m ] Build and install portaudio -------------------------------------------"
+cd modules/portaudio
 ./configure --with-alsa --without-oss --without-jack
 make
 sudo make install
-
-rm -rf pink-0
-git clone https://github.com/shaduzlabs/pink-0.git
-git checkout develop
-cd pink-0
-
-
-echo -e "[ \033[1m\033[96mpink\033[m ] Update submodules -----------------------------------------------------"
-git submodule update --init --recursive
-
-echo -e "[ \033[1m\033[96mpink\033[m ] Install dependencies --------------------------------------------------"
-sudo apt-get update && sudo apt-get install -y --force-yes cmake wiringpi
-
-#echo -e "[ \033[1m\033[96mpink\033[m ] Build and install portaudio -------------------------------------------"
-#cd modules/portaudio
-#./configure --with-alsa --without-oss --without-jack
-#make
-#sudo make install
-#cd ../../
+cd ../../
 #echo a
 
 echo ""
@@ -42,16 +32,16 @@ cd ../../../
 
 
 
-echo ""
-echo ""
-echo ""
-echo -e "[ \033[1m\033[96mpink\033[m ] Build pink and install the binary and the daemon configuration file ---"
-rm -rf build
+#echo ""
+#echo ""
+#echo ""
+#echo -e "[ \033[1m\033[96mpink\033[m ] Build pink and install the binary and the daemon configuration file ---"
+#rm -rf build
 mkdir build
 cd build
 #if [ $1 == "no-ui" ]
 #  then
-    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_PI_ZERO=OFF -DUSE_WEBSOCKET=ON -DJUST_INSTALL_CEREAL=ON ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_PI_ZERO=ON -DUSE_WEBSOCKET=ON -DJUST_INSTALL_CEREAL=ON ..
 #  else
 #    echo -e "[ \033[1m\033[96mpink\033[m ] Raspberry Pi Zero shield support is enabled ---------------------------"
 #    cmake -DCMAKE_BUILD_TYPE=Release -DUSE_PI_ZERO=ON -DUSE_WEBSOCKET=ON -DJUST_INSTALL_CEREAL=ON ..

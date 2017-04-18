@@ -1,14 +1,15 @@
-#sudo apt-get update && sudo apt-get install 
+#!/bin/bash
 
-#sudo apt-get update && sudo apt-get install -y --force-yes liblo-dev 
+echo compile ports
 
 g++ \
-	-o ports \
-	Pixi.cpp Ports.cpp MidiOutput.cpp \
+	Pixi.cpp Ports.cpp MidiOutput.cpp main.cpp \
+	-o portsd \
 	-l bcm2835 \
 	-l lo \
 	-I /usr/include/ \
 	-std=c++11 \
 	-std=c++0x \
 	-pthread && \
-	sudo ./ports
+	sudo ./portsd no-daemon
+

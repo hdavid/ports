@@ -1,8 +1,7 @@
 #!/bin/bash
-# ports
-# setup network 
+# ports setup script
 
-
+### generate hostname from mac address
 MAC=`cat /sys/class/net/wlan0/address`
 PORTS_HOSTNAME="ports-${MAC: -2}"
 echo hostname is $PORTS_HOSTNAME
@@ -10,10 +9,10 @@ echo $PORTS_HOSTNAME | sudo tee /etc/hostname
 #sudo sed -i 's/127.0.0.1/127.0.0.1 $PORTS_HOSTNAME/' /etc/hosts 
 #echo "127.0.0.1 $PORTS_HOSTNAME" | sudo tee -a /etc/hosts
 
-### install needed packages
-echo Install needed packages
-#sudo apt-get update > /dev/null && sudo apt-get install -y --force-yes dnsmasq git liblo-dev  > /dev//null
-### prevent dhcp to start at boot
+### install dependencies
+echo Install dependencies
+sudo apt-get update > /dev/null && sudo apt-get install -y --force-yes dnsmasq git liblo-dev htop vim > /dev//null
+# prevent dhcp to start at boot
 sudo update-rc.d -f dnsmasq remove > /dev/null
 
 
@@ -21,11 +20,10 @@ sudo update-rc.d -f dnsmasq remove > /dev/null
 if sudo grep -q "mode=2" /etc/wpa_supplicant/wpa_supplicant.conf; then
 	echo wpa already configured with accesspoint mode.
 else
-	echo configure network fall back onto ports ssid
-	
-	#cat >> /etc/wpa_supplicant/wpa_supplicant.conf <<\DELIM
+	echo configure wap_supplicant to fall back onto $PORTS_HOSTNAME SSID
 	sudo tee -a /etc/wpa_supplicant/wpa_supplicant.conf >/dev/null <<DELIM
-# put your own client networks above this access point mode
+
+# put your own client mode networks above this access point mode
 network={
     ssid="$PORTS_HOSTNAME"
     mode=2
@@ -56,34 +54,24 @@ echo create boot script
 sudo tee /etc/rc.local >/dev/null <<DELIM
 #!/bin/bash
 echo "performance" | sudo tee  /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-sleep 5 # todo wait for ip.
-#inet=\`hostname -I\`
-inet=\`/sbin/ifconfig wlan0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'\`
+sleep 7 # TODO wait for ip.
+inet=\`hostname -I\`
+#inet=\`/sbin/ifconfig wlan0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'\`
 if [[ \$inet == 169*  ]];
 then
     # noconnection. access point
-    echo "Creating WIFI Access Point"
+    echo "Creating WIFI Access Point ssid: $PORTS_HOSTNAME key: portsports"
     ifconfig wlan0 down
     ifconfig wlan0 192.168.99.1 netmask 255.255.255.0 up
     sudo /etc/init.d/dnsmasq start
-    echo "wifi network created ssid: $PORTS_HOSTNAME key: portsports"
 else
     sudo /etc/init.d/dnsmasq stop
 fi
 
-/usr/sbin/ports > /var/log/ports.log 2>&1 &
+/usr/sbin/portsd no-daemon > /var/log/ports.log 2>&1 &
 
 exit 0
 DELIM
-
-### Pink
-# echo install pink-0
-#git clone https://github.com/hdavid/pink-0.git
-#cp install-pink.sh pink-0
-#cd pink-0
-#git checkout ports
-#../install-pink.sh no-ui
-#cd ..
 
 
 ### BCM2835
@@ -98,15 +86,17 @@ rm -rf bcm2835-1.52*
 
 echo compile ports
 g++ \
-	-o ports \
-	Pixi.cpp Ports.cpp MidiOutput.cpp \
+	Pixi.cpp Ports.cpp MidiOutput.cpp main.cpp \
+	-o portsd \
 	-l bcm2835 \
 	-l lo \
 	-I /usr/include/ \
 	-std=c++11 \
 	-std=c++0x \
 	-pthread && \
-	sudo mv ports /usr/sbin
+	sudo mv portsd /usr/sbin
 
-
-
+### service script
+#chmod +x support/ports 
+#sudo cp support/ports /etc/init.d/
+#sudo update-rc.d ports defaults
