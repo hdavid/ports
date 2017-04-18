@@ -1,6 +1,6 @@
 
 sudo apt-get install -y --force-yes libasound-dev librtaudio-dev cmake wiringpi lighttpd
-sudo cp -r pink-0/support/html/ /var/www/html/
+sudo cp -r pink-0/support/html/* /var/www/html/
 sudo cp support/index.html /var/www/html
 git clone https://github.com/shaduzlabs/pink-0.git
 cd pink-0
