@@ -6,6 +6,7 @@ git clone https://github.com/shaduzlabs/pink-0.git
 cd pink-0
 git checkout develop
 git submodule update --init --recursive
+sudo cp -r support/html /var/www/html
 
 cp ../support/main.cpp src/
 
