@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo compile ports
-
+sudo killall portsd
 g++ \
 	Pixi.cpp Ports.cpp MidiOutput.cpp main.cpp \
 	-o portsd \
@@ -11,5 +11,6 @@ g++ \
 	-std=c++11 \
 	-std=c++0x \
 	-pthread && \
-	sudo ./portsd no-daemon
+sudo mv portsd /usr/sbin && \
+sudo /usr/sbin/portsd no-daemon
 
