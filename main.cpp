@@ -21,6 +21,7 @@ shaduzlabs.com #####*/
 #include <signal.h>
 #include <chrono>
 #include <thread>
+#include <iostream>
 #include "Ports.h"
 
 #define DAEMON_NAME "portsd"
@@ -198,17 +199,17 @@ int main(int argc_, char* argv_[])
   ScopedLog log;
 
   log.info("daemon starting");
-  if (argc_ != 2 || std::string(argv_[1]) != "no-daemon")
-  {
-    daemonize("/tmp/", "/var/run/portsd.pid");
-  }
+  //if (argc_ != 2 || std::string(argv_[1]) != "no-daemon")
+  //{
+  //  daemonize("/tmp/", "/var/run/portsd.pid");
+  //}
 
 
  portsInstance.start();
 
   try
   {
-    while (true)
+    while (!portsInstance.stop)
     {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -217,7 +218,19 @@ int main(int argc_, char* argv_[])
   {
     log.exception(e);
   }
-
+  std::cout << "aaa\n";
+  if (portsInstance.restart){
+	std::cout << "xx\n";
+	//char buf[20];
+    	//sprintf(buf, "%d", count);
+	char* newargv[3];
+	newargv[0] = "/usr/sbin/portsd";
+	newargv[1] = "no-daemon";
+	newargv[2] = NULL;
+	//execve("/usr/sbin/portsd", newargv, NULL);
+	//system("sleep 3; sudo nohup /usr/sbin/portsd no-daemon &");
+  }
+  
   log.info("daemon terminated");
 
   return 0;

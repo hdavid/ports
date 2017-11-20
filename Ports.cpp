@@ -21,9 +21,10 @@ lo::ServerThread oscServer(5000);
 void Ports::start() {
 
 	std::cout << "Ports: Starting\n";
-
+	gettimeofday(&started, NULL);
+	gettimeofday(&lastReset, NULL);
 	midiOutput.openDevice("/dev/snd/midiC1D0");
-
+	stop = false;
 	pixi.configure();
 	
 	startOSC(5000);
@@ -54,7 +55,7 @@ void Ports::startOSC(int port) {
 	);
 	oscServer.start();
 	
-	std::cout << "osc started";
+	std::cout << "osc started\n";
 }
 
 
@@ -95,12 +96,14 @@ inline void Ports::pixiTimer() {
 		//trigger mode
 	  	if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
 			if (channelTrigCyles[channel] > 0) {
+				//printf("trig");
 			  	//channelValues[channel] =  1;
 			  	channelTrigCyles[channel]--;
 			} else {
+				//printf("trig end");
 			  	channelValues[channel] = 0;
 			}
-			pixi.setChannelValue(channel, channelValues[channel], false, channelIsBipolar(channel));
+			pixi.setChannelValue(channel, channelValues[channel]);
 		}
 
 	  //check if mode is LFO kind
@@ -111,25 +114,26 @@ inline void Ports::pixiTimer() {
 			channelLFOPhases[channel] -= 1;
 		}
 		double phase = channelLFOPhases[channel];
+		float offset = 0;
 		//std::cout << "LFO " << channel << " : " << phase << "\n";
 		switch (channelModes[channel]) {
 		  case PORTS_OUTPUT_MODE_LFO_SINE:
-			channelValues[channel] = sin(phase * 2 * M_PI) * 0.5 + 0.5; //TODO: use lookup table
+			channelValues[channel] = sin(phase * 2 * M_PI) * 0.5 + offset; //TODO: use lookup table
 			break;
 		  case PORTS_OUTPUT_MODE_LFO_SAW:
-			channelValues[channel] = (1 - phase);
+			channelValues[channel] = (1 - phase) - 0.5 + offset;
 			break;
 		  case PORTS_OUTPUT_MODE_LFO_RAMP:
-			channelValues[channel] = phase;
+			channelValues[channel] = phase - 0.5 + offset;
 			break;
 		  case PORTS_OUTPUT_MODE_LFO_TRI:
-			channelValues[channel] = (phase < 0.5 ? phase * 2 : (1 - phase) * 2) * 0.5 + 0.5;
+			channelValues[channel] = (phase < 0.5 ? phase * 2 : (1 - phase) * 2) * 0.5 + offset;
 			break;
 		  case PORTS_OUTPUT_MODE_LFO_SQUARE:
-			channelValues[channel] = (phase < channelLFOPWMs[channel]) ? 1 : 0;
+			channelValues[channel] = offset - 0.5 + (phase < channelLFOPWMs[channel]) ? 1 : 0;
 			break;
 		}
-		pixi.setChannelValue(channel, channelValues[channel], false, channelIsBipolar(channel));
+		pixi.setChannelValue(channel, channelValues[channel]);
 	  }
 	}
     
@@ -145,6 +149,41 @@ void Ports::oscMessage(const char* path, float v) {
 	if (strncmp(path, "/in/", 3)==0) {
 		offset += 4;
 		//TODO:
+	} else if (strncmp(path, "/reset", 6)==0) {
+		offset += 6;
+		gettimeofday(&now, NULL);
+		timersub(&now, &lastReset, &elapsed);
+		if (elapsed.tv_sec > 10) {
+		   	lastReset = now;
+			std::cout << "resetting pixi.\n";
+			pixi.configure();
+		}
+	} else if (strncmp(path, "/restart", 8)==0) {
+		offset += 8;
+	 	gettimeofday(&now, NULL);
+		timersub(&now, &lastReset, &elapsed);
+		if (elapsed.tv_sec > 10) {
+			timersub(&now, &started, &elapsed);
+			if (elapsed.tv_sec > 10) { //only restart if we started more than 30 sec ago
+				lastReset = now;
+				std::cout << "restarting\n";
+				restart = true;
+				stop = true;
+				//system("killall portsd; sleep 1;/usr/sbin/portsd no-daemon");
+				//exec("/usr/sbin/portsd no-daemon");
+				//execl("/usr/sbin/portsd", "/usr/sbin/portsd", "no-daemon", (char *) 0);
+				//
+			}
+		}
+	} else if (strncmp(path, "/reboot", 7)==0) {
+		offset += 7;
+		gettimeofday(&now, NULL);
+		timersub(&now, &lastReset, &elapsed);
+		if (elapsed.tv_sec > 10){
+			lastReset = now;
+			std::cout << "rebooting";
+			system("reboot now\n");
+		}
 	} else if (strncmp(path, "/out/", 5)==0) {
 		offset += 5;
 		int channel = parseInt(path, offset);
@@ -174,13 +213,19 @@ void Ports::oscMessage(const char* path, float v) {
 				if (value > 1) {
 					value = 1;
 				}
-				if (value < 0) {
-					value = 0;
+				if (channelIsBipolar(channel)){
+					if (value <= -1){
+						value = -1;
+					}
+				} else {
+					if (value < 0) {
+						value = 0;
+					}	
 				}
 				channelValues[channel] = value;
 				//change pixi mode
 				pixi.setChannelMode(channel, false, isBipolar, force);
-				pixi.setChannelValue(channel, value, false, isBipolar);
+				pixi.setChannelValue(channel, value);
 				if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
 					channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
 				}
@@ -251,7 +296,7 @@ bool Ports::channelIsLfo(int channel) {
 
 
 bool Ports::channelIsBipolar(int channel) {
-	return false;
+//	return false;
   int modee = channelModes[channel];
   return (modee < 50 || modee >= 100 && modee < 150) ? false : true;
 }

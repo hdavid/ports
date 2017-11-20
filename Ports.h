@@ -4,6 +4,7 @@
 #include "Pixi.h"
 #include "MidiOutput.h"
 
+#include <stdlib.h>
 #include <sys/time.h>
 
 
@@ -48,7 +49,8 @@ class Ports {
     void startOSC(int port);
 	void pixiTimer();
     void oscMessage(const char *path, const float value);
-
+    bool stop;
+    bool restart;
   private:
   	Pixi pixi;
   	MidiOutput midiOutput;
@@ -59,8 +61,10 @@ class Ports {
 	double channelLFOFrequencies[20]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	double channelLFOPWMs[20]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; 
 	struct timeval lastTimer;
+	struct timeval lastReset;
 	struct timeval now;
 	struct timeval elapsed;
+	struct timeval started;
 	int parseChannel(const char* path, int offset);
 	int parseOutputMode(const char* path, int offset);
 	int parseInputMode(const char* path, int offset);

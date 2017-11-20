@@ -18,7 +18,7 @@ class Pixi {
     Pixi();
     ~Pixi();
 
-    void setChannelValue(int channel, float value, bool isInput, bool isBipolar);
+    void setChannelValue(int channel, float value);
     void setChannelMode(int channel, bool isInput, bool isBipolar, bool force);
     uint16_t getInput(int channel);
     uint16_t getOutput(int channel);

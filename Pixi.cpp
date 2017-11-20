@@ -194,7 +194,7 @@ void Pixi::setChannelMode(int channel, bool isInput, bool isBipolar, bool force)
 		channelIsBipolar[channel] = isBipolar;
       	// MAX3100 pdf page 43
       	uint8_t channelMode = channelIsInput[channel] ? CH_MODE_ADC_P : CH_MODE_DAC_ADC_MON; // CH_MODE_DAC  CH_MODE_DAC_ADC_MON
-      	uint8_t range = channelIsBipolar[channel] ? CH_0_TO_10P : CH_0_TO_10P;	// no -10v ref CH_5N_TO_5P
+      	uint8_t range = channelIsBipolar[channel] ? CH_5N_TO_5P : CH_0_TO_10P;	// no -10v ref CH_5N_TO_5P
       	writeRegister(PIXI_PORT_CONFIG + channel,
                     (
                       ( (channelMode << 12 ) & FUNCID )
@@ -210,7 +210,7 @@ void Pixi::setChannelMode(int channel, bool isInput, bool isBipolar, bool force)
 }
 
 
-void Pixi::setChannelValue(int channel, float value, bool isInput, bool isBipolar) {
+void Pixi::setChannelValue(int channel, float value) {
 	if (!channelIsInput[channel]){
 		uint16_t out = 0;
 		if (channelIsBipolar[channel]){
