@@ -197,7 +197,7 @@ void Ports::oscMessage(const char* path, float v) {
 				force = true;
 			}
 			bool isBipolar = channelIsBipolar(channel);
-			std::cout << "OSC -> " << path << " : " << value << "\n";
+			//std::cout << "OSC -> " << path << " : " << value << "\n";
 			if (channelIsLfo(channel)){
 				//value scaling
 				if (value<=0){
@@ -237,7 +237,7 @@ void Ports::oscMessage(const char* path, float v) {
 		}
 	} else if (strncmp(path, "/midi/", 6)==0) {
 		offset += 6;
-		std::cout << "OSC -> " << path << " : " << value << "\n";
+		//std::cout << "OSC -> " << path << " : " << value << "\n";
 		midiOutput.message(path,offset, value);
 	}			
 }
