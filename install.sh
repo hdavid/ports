@@ -15,6 +15,8 @@ sudo apt-get update > /dev/null && sudo apt-get install -y --force-yes dnsmasq g
 # prevent dhcp to start at boot
 sudo update-rc.d -f dnsmasq remove > /dev/null
 
+sudo cp support/etc_avahi_services_ports.service /etc/avahi/services/ports.service
+sudo /etc/init.d/avahi restart
 
 ### update wifi config to enable fallback on ports ssid 
 if sudo grep -q "mode=2" /etc/wpa_supplicant/wpa_supplicant.conf; then
