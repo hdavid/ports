@@ -75,19 +75,23 @@ inline void Ports::pixiTimer() {
 	  	if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel] || PORTS_OUTPUT_MODE_SYNCTRIG == channelModes[channel]) {
 			if (channelSyncTriggerRequested[channel] && clockFrame) {
 				//trigger requested and lfo just warped : trigger !
-				channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
+				//printf("synched trigger exec %d\n",channel);
+				channelTrigCycles[channel] = PORTS_TRIGGER_CYCLES;
 				channelSyncTriggerRequested[channel] = false;
 			}
-			if (channelTrigCyles[channel] > 0) {
-				//printf("trig");
+			if (channelTrigCycles[channel] > 0) {
+				if (channelTrigCycles[channel] == PORTS_TRIGGER_CYCLES){
+					//printf("trig start %d\n", channel);
+				}
+				channelTrigCycles[channel]--;
 				if (channelValues[channel] != 1) {
-			  		channelValues[channel] = 1;
-			  		channelTrigCyles[channel]--;
+			  		//printf("trig set to one : %d\n",channel);
+					channelValues[channel] = 1;
 					pixi.setChannelValue(channel, channelValues[channel]);
 				}
 			} else {
-				//printf("trig end");
 				if (channelValues[channel] != 0) {
+					//printf("trig end %d\n", channel);
 					channelValues[channel] = 0;
 					pixi.setChannelValue(channel, channelValues[channel]);
 				}
@@ -226,7 +230,7 @@ void Ports::oscMessage(const char* path, float v) {
 				pixi.setChannelMode(channel, false, isBipolar, force);
 				pixi.setChannelValue(channel, value);
 				if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
-					channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
+					channelTrigCycles[channel] = PORTS_TRIGGER_CYCLES;
 				}else if (PORTS_OUTPUT_MODE_SYNCTRIG == channelModes[channel]) {
 					channelSyncTriggerRequested[channel] = true;
 				}
