@@ -13,131 +13,129 @@ Ports::Ports() {
 }
 
 Ports::~Ports() {
-	
 }
 
 lo::ServerThread oscServer(5000);
 
 void Ports::start() {
-
-	std::cout << "Ports: Starting\n";
+	printf("Ports: Starting\n");
 	gettimeofday(&started, NULL);
 	gettimeofday(&lastReset, NULL);
-	midiOutput.openDevice("/dev/snd/midiC1D0");
-	stop = false;
-	pixi.configure();
 	
-	startOSC(5000);
+	// open midi device
+	this.midiOutput.openDevice("/dev/snd/midiC1D0");
+	this.stop = false;
+	this.pixi.configure();
+	
+	// OSC
+	this.startOSC(5000);
 
-	signal(SIGALRM, pixiTimerCallback);   
-        ualarm(PORTS_TIMER_PERIOD, PORTS_TIMER_PERIOD);
+	// TIMER
+	signal(SIGALRM, this.pixiTimerCallback); 
+	ualarm(PORTS_TIMER_PERIOD, PORTS_TIMER_PERIOD);
 }
 
 void Ports::startOSC(int port) {
-
-	oscServer.add_method(NULL, NULL,
+	//register method for all floats messages
+	this.oscServer.add_method(
+		NULL,
+		NULL,
 		[this](const char *path, const char *types, lo_arg ** argv, int argc) {
 			float value = 1;
 			if (argc==1 && types[0]=='f'){
-    			value = (float)argv[0]->f;
+				value = (float)argv[0]->f;
 			}
-			this->oscMessage(path, value);
-			//return 0;
+			this.oscMessage(path, value);
 		}
-		/*[this](const char* path, const lo::Message &msg) {
-		std::cout<< "message : " << path;
-		float value = 1;
-		if (&msg.argc&==1 && &msg.types[0]&=='f'){
-			value = &msg.argv()[0]->f&;
-		}
-		this->oscMessage(path, value);
-	  }*/
 	);
-	oscServer.start();
-	
-	std::cout << "osc started\n";
+
+	// start
+	this.oscServer.start();
+	printf("osc started\n");
 }
 
 
-int Ports::parseInt(const char* a, int offset) {
-	int sign, n, c;
-	c = 0;
-	n = 0;
-	if (a[offset] == '-') {  // Handle negative integers
-		sign = -1;
-     	offset++;
-  	} else {
-  		sign = 1;
-  	}
-  	while(a[offset]!='/' && offset<strlen(a)){
-  		n = n * 10 + a[offset] - '0';
-  		offset++;
-  		c++;
-  	}
-  	if (sign == -1) {
-	    n = -n;
-  	}
-  	return n;
-}
+
 
 
 inline void Ports::pixiTimer() {
+
 	//check timer accuracy
-    gettimeofday(&now, NULL);
-    timersub(&now, &lastTimer, &elapsed);
-    lastTimer = now;
+	gettimeofday(&now, NULL);
+	timersub(&now, &lastTimer, &elapsed);
+	lastTimer = now;
 	if (elapsed.tv_sec < 100000 && elapsed.tv_usec>PORTS_TIMER_PERIOD * (1+PORTS_TIMER_PERIOD_TOLERANCE)) {
-    	printf("timer underrun. last timer : %f ms ago.\n", elapsed.tv_usec/1000.0);
-    }
-    
-    //update channels
-    long interval = elapsed.tv_usec;
-	for(int channel = 0; channel < 20; channel++){
-		//trigger mode
-	  	if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
-			if (channelTrigCyles[channel] > 0) {
+		printf("timer underrun. last timer : %f ms ago.\n", elapsed.tv_usec/1000.0);
+	}
+	long interval = elapsed.tv_usec;// interval since last pixiTimer execution
+
+	//update channels values.
+	for(int channel = 19; channel>=0; channel--){  //must do in reverse order as channel 20 is clock
+		//trigger and synched trigger modes
+	  	if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel] || PORTS_OUTPUT_MODE_SYNCEDTRIG == channelModes[channel) {
+			if (this.channelSyncedTriggerRequested[channel] && clockFrame) {
+				//trigger requested and lfo just warped : trigger !
+				this.channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
+				this.channelSyncedTriggerRequest[channel] = false;
+			}
+			if (this.channelTrigCyles[channel] > 0) {
 				//printf("trig");
-			  	//channelValues[channel] =  1;
-			  	channelTrigCyles[channel]--;
+				if (this.channelValues[channel] != 1) {
+			  		this.channelValues[channel] = 1;
+			  		this.channelTrigCyles[channel]--;
+					this.pixi.setChannelValue(channel, this.channelValues[channel]);
+				}
 			} else {
 				//printf("trig end");
-			  	channelValues[channel] = 0;
+				if (this.channelValues[channel] != 0) {
+					this.channelValues[channel] = 0;
+					this.pixi.setChannelValue(channel, this.channelValues[channel]);
+				}
+			}
+		
+
+		//check if mode is LFO kind
+		} else if (channelIsLfo(channel)) {
+
+			if (channelLFOFrequencies[channel]>0) { //ignore zero frequency
+				//compute phase increment
+				double lfoPeriod = (1000000.0 / channelLFOFrequencies[channel]);
+				channelLFOPhases[channel] += interval/lfoPeriod;
+				//lfo-19 just warped. clock fram !
+				if (channelLFOPhases[channel]>1) {
+					channelLFOPhases[channel] -= 1;
+					if (channel == 19){
+						clockFrame=true;
+					}
+				}
+			}
+			// range and offset
+			float lfo_offset = BIPOLAR_POWER ? 0.0 : ; // bipolar values are [-1 1], unipolar [0, 1]
+			float lfo_range = BIPOLAR_POWER ? 1.0 : 0.5; // bipolar values are [-1 1], unipolar [0, 1]
+
+			double phase = channelLFOPhases[channel];
+			switch (channelModes[channel]) {
+			  case PORTS_OUTPUT_MODE_LFO_SINE:
+				channelValues[channel] = sin(phase * 2 * M_PI) * lfo_range + lfo_offset; //TODO: use lookup table
+				break;
+			  case PORTS_OUTPUT_MODE_LFO_SAW:
+				channelValues[channel] = (1 - phase * 2) * lfo_range + lfo_offset;
+				break;
+			  case PORTS_OUTPUT_MODE_LFO_RAMP:
+				channelValues[channel] = (phase * 2 - 1) * lfo_range + lfo_offset;
+				break;
+			  case PORTS_OUTPUT_MODE_LFO_TRI:
+				channelValues[channel] = ((phase < 0.5 ? (phase  * 2) : (2 - phase * 2) ) * 2 - 1 ) * lfo_range + lfo_offset;
+				break;
+			  case PORTS_OUTPUT_MODE_LFO_SQUARE:
+				channelValues[channel] = (phase < channelLFOPWMs[channel] ? 1 : -1) * lfo_range + lfo_offset;
+				break;
 			}
 			pixi.setChannelValue(channel, channelValues[channel]);
 		}
-
-	  //check if mode is LFO kind
-	  if (channelIsLfo(channel)) {
-		double lfoPeriod = (1000000.0 / channelLFOFrequencies[channel]);
-		channelLFOPhases[channel] += interval/lfoPeriod;
-		if (channelLFOPhases[channel]>1) {
-			channelLFOPhases[channel] -= 1;
-		}
-		double phase = channelLFOPhases[channel];
-		float offset = 0;
-		//std::cout << "LFO " << channel << " : " << phase << "\n";
-		switch (channelModes[channel]) {
-		  case PORTS_OUTPUT_MODE_LFO_SINE:
-			channelValues[channel] = sin(phase * 2 * M_PI) * 0.5 + offset; //TODO: use lookup table
-			break;
-		  case PORTS_OUTPUT_MODE_LFO_SAW:
-			channelValues[channel] = (1 - phase) - 0.5 + offset;
-			break;
-		  case PORTS_OUTPUT_MODE_LFO_RAMP:
-			channelValues[channel] = phase - 0.5 + offset;
-			break;
-		  case PORTS_OUTPUT_MODE_LFO_TRI:
-			channelValues[channel] = (phase < 0.5 ? phase * 2 : (1 - phase) * 2) * 0.5 + offset;
-			break;
-		  case PORTS_OUTPUT_MODE_LFO_SQUARE:
-			channelValues[channel] = offset - 0.5 + (phase < channelLFOPWMs[channel]) ? 1 : 0;
-			break;
-		}
-		pixi.setChannelValue(channel, channelValues[channel]);
-	  }
 	}
-    
-    //update pixi
+	
+	// update pixi
 	pixi.update();
 
 }
@@ -148,7 +146,8 @@ void Ports::oscMessage(const char* path, float v) {
 	int offset = 0;
 	if (strncmp(path, "/in/", 3)==0) {
 		offset += 4;
-		//TODO:
+		//TODO: input handling....
+
 	} else if (strncmp(path, "/reset", 6)==0) {
 		offset += 6;
 		gettimeofday(&now, NULL);
@@ -158,6 +157,7 @@ void Ports::oscMessage(const char* path, float v) {
 			std::cout << "resetting pixi.\n";
 			pixi.configure();
 		}
+
 	} else if (strncmp(path, "/restart", 8)==0) {
 		offset += 8;
 	 	gettimeofday(&now, NULL);
@@ -197,18 +197,17 @@ void Ports::oscMessage(const char* path, float v) {
 				force = true;
 			}
 			bool isBipolar = channelIsBipolar(channel);
-			//std::cout << "OSC -> " << path << " : " << value << "\n";
 			if (channelIsLfo(channel)){
-				//value scaling
-				if (value<=0){
-					value = 0.01;
+				//lfo frequency clipping
+				if (value<0){
+					value = 0;
 				}
-				if (value>1000){
-					value = 1000;
+				if (value>10000){
+					value = 10000;
 				}
 				channelLFOFrequencies[channel] = value;
 				pixi.setChannelMode(channel, false, isBipolar, force);
-			}else{
+			} else {
 				//value scaling
 				if (value > 1) {
 					value = 1;
@@ -228,6 +227,8 @@ void Ports::oscMessage(const char* path, float v) {
 				pixi.setChannelValue(channel, value);
 				if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
 					channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
+				}else if (PORTS_OUTPUT_MODE_SYNCTRIG == channelModes[channel]) {
+					channelSyncedTriggerRequested[channel] = true;
 				}
 				
 			}
@@ -248,6 +249,8 @@ int Ports::parseOutputMode(const char* str, int offset){
 		return PORTS_OUTPUT_MODE_GATE;
 	} else if (strncmp(str+offset, "trig", 4)==0) {
 		return PORTS_OUTPUT_MODE_TRIG;
+	} else if (strncmp(str+offset, "synctrig", 8)==0) {
+		return PORTS_OUTPUT_MODE_SYNCTRIG;
 	} else if (strncmp(str+offset, "flipflop", 8)==0) {
 		return PORTS_OUTPUT_MODE_FLIPFLOP;
 	} else if (strncmp(str+offset, "cvuni", 5)==0 || strncmp(str+offset, "cv", 2)==0) {
@@ -296,9 +299,8 @@ bool Ports::channelIsLfo(int channel) {
 
 
 bool Ports::channelIsBipolar(int channel) {
-//	return false;
   int modee = channelModes[channel];
-  return false;//(modee < 50 || modee >= 100 && modee < 150) ? false : true;
+  return BIPOLAR_POWER && (!(modee < 50 || modee >= 100 && modee < 150));
 }
 
 
@@ -308,6 +310,28 @@ inline void pixiTimerCallback(int sig_num){
 	portsInstance.pixiTimer();
 }
 
+
+int Ports::parseInt(const char* a, int offset) {
+	int sign, n, c;
+	c = 0;
+	n = 0;
+	if (a[offset] == '-') {  // Handle negative integers
+		sign = -1;
+	 	offset++;
+  	} else {
+  		sign = 1;
+  	}
+  	while(a[offset]!='/' && offset<strlen(a)){
+  		n = n * 10 + a[offset] - '0';
+  		offset++;
+  		c++;
+  	}
+  	if (sign == -1) {
+		n = -n;
+  	}
+  	return n;
+}
+
 /*main() {
 
 	ports.start();
@@ -315,12 +339,12 @@ inline void pixiTimerCallback(int sig_num){
 	while(true){
 	  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
-    //std::thread threadLibLo(startOSCLibLo, "5002");
+	//std::thread threadLibLo(startOSCLibLo, "5002");
 	//std::thread threadOSCPACK(startOSCPACK, 1);
 	//signal(SIGALRM, timerCallback);   
 	//this one makes udp server to stop working
-    //ualarm(PORTS_TIMER_PERIOD, PORTS_TIMER_PERIOD);
-    //startOSCLibLo("5000");
+	//ualarm(PORTS_TIMER_PERIOD, PORTS_TIMER_PERIOD);
+	//startOSCLibLo("5000");
  	std::cout << "Ports ending.\n";
 	return 0;
 }*/
@@ -331,52 +355,52 @@ inline void pixiTimerCallback(int sig_num){
 String Ports::channelGetModeName(int channel) {
   String out = "";
   switch (channelModes[channel]) {
-    case OUTPUT_MODE_GATE:
-      out = "gate";
-      break;
-    case OUTPUT_MODE_TRIG:
-      out = "trig";
-      break;
-    case OUTPUT_MODE_FLIPFLOP:
-      out = "flipflop";
-      break;
-    case OUTPUT_MODE_CVUNI:
-      out = "cvuni";
-      break;
-    case OUTPUT_MODE_CVBI:
-      out = "cvbi";
-      break;
-    case OUTPUT_MODE_RANDOM_SH:
-      out = "sh";
-      break;
-    case OUTPUT_MODE_LFO_SINE:
-      out = "lfosine";
-      break;
-    case OUTPUT_MODE_LFO_SAW:
-      out = "lfosaw";
-      break;
-    case OUTPUT_MODE_LFO_RAMP:
-      out = "lforamp";
-      break;
-    case OUTPUT_MODE_LFO_TRI:
-      out = "lfotri";
-      break;
-    case OUTPUT_MODE_LFO_SQUARE:
-      out = "lfosquare";
-      break;
+	case OUTPUT_MODE_GATE:
+	  out = "gate";
+	  break;
+	case OUTPUT_MODE_TRIG:
+	  out = "trig";
+	  break;
+	case OUTPUT_MODE_FLIPFLOP:
+	  out = "flipflop";
+	  break;
+	case OUTPUT_MODE_CVUNI:
+	  out = "cvuni";
+	  break;
+	case OUTPUT_MODE_CVBI:
+	  out = "cvbi";
+	  break;
+	case OUTPUT_MODE_RANDOM_SH:
+	  out = "sh";
+	  break;
+	case OUTPUT_MODE_LFO_SINE:
+	  out = "lfosine";
+	  break;
+	case OUTPUT_MODE_LFO_SAW:
+	  out = "lfosaw";
+	  break;
+	case OUTPUT_MODE_LFO_RAMP:
+	  out = "lforamp";
+	  break;
+	case OUTPUT_MODE_LFO_TRI:
+	  out = "lfotri";
+	  break;
+	case OUTPUT_MODE_LFO_SQUARE:
+	  out = "lfosquare";
+	  break;
 
-    case INPUT_MODE_GATE:
-      out = "gate";
-      break;
-    case INPUT_MODE_TRIG:
-      out = "trig";
-      break;
-    case INPUT_MODE_CVUNI:
-      out = "cvuni";
-      break;
-    case INPUT_MODE_CVBI:
-      out = "cvbi";
-      break;
+	case INPUT_MODE_GATE:
+	  out = "gate";
+	  break;
+	case INPUT_MODE_TRIG:
+	  out = "trig";
+	  break;
+	case INPUT_MODE_CVUNI:
+	  out = "cvuni";
+	  break;
+	case INPUT_MODE_CVBI:
+	  out = "cvbi";
+	  break;
   }
   return out;
 }

@@ -10,7 +10,8 @@
 
 #define PORTS_OUTPUT_MODE_GATE 1
 #define PORTS_OUTPUT_MODE_TRIG 2
-#define PORTS_OUTPUT_MODE_CVUNI 3
+#define PORTS_OUTPUT_MODE_SYNCTRIG 3
+#define PORTS_OUTPUT_MODE_CVUNI 4
 
 #define PORTS_OUTPUT_MODE_FLIPFLOP 10
 
@@ -35,6 +36,8 @@
 #define PORTS_TRIGGER_CYCLES 10000 / PORTS_TIMER_PERIOD // 
 
 
+#define BIPOLAR_POWER = false
+
 //forward delcaration
 inline void pixiTimerCallback(int sig_num);
 
@@ -56,10 +59,12 @@ class Ports {
   	MidiOutput midiOutput;
 	int channelModes[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	int channelTrigCyles[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	bool channelSyncedTriggerRequested[20] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};
 	double channelValues[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	double channelLFOPhases[20]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};  // 0 to 1
 	double channelLFOFrequencies[20]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	double channelLFOPWMs[20]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; 
+	double channelLFOPWMs[20]= {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5}; 
+	bool clockFrame=false
 	struct timeval lastTimer;
 	struct timeval lastReset;
 	struct timeval now;
