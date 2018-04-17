@@ -23,21 +23,21 @@ void Ports::start() {
 	gettimeofday(&lastReset, NULL);
 	
 	// open midi device
-	this.midiOutput.openDevice("/dev/snd/midiC1D0");
-	this.stop = false;
-	this.pixi.configure();
+	this->midiOutput.openDevice("/dev/snd/midiC1D0");
+	this->stop = false;
+	this->pixi.configure();
 	
 	// OSC
-	this.startOSC(5000);
+	this->startOSC(5000);
 
 	// TIMER
-	signal(SIGALRM, this.pixiTimerCallback); 
+	signal(SIGALRM, pixiTimerCallback); 
 	ualarm(PORTS_TIMER_PERIOD, PORTS_TIMER_PERIOD);
 }
 
 void Ports::startOSC(int port) {
 	//register method for all floats messages
-	this.oscServer.add_method(
+	oscServer.add_method(
 		NULL,
 		NULL,
 		[this](const char *path, const char *types, lo_arg ** argv, int argc) {
@@ -45,12 +45,12 @@ void Ports::startOSC(int port) {
 			if (argc==1 && types[0]=='f'){
 				value = (float)argv[0]->f;
 			}
-			this.oscMessage(path, value);
+			this->oscMessage(path, value);
 		}
 	);
 
 	// start
-	this.oscServer.start();
+	oscServer.start();
 	printf("osc started\n");
 }
 
@@ -72,24 +72,24 @@ inline void Ports::pixiTimer() {
 	//update channels values.
 	for(int channel = 19; channel>=0; channel--){  //must do in reverse order as channel 20 is clock
 		//trigger and synched trigger modes
-	  	if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel] || PORTS_OUTPUT_MODE_SYNCEDTRIG == channelModes[channel) {
-			if (this.channelSyncedTriggerRequested[channel] && clockFrame) {
+	  	if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel] || PORTS_OUTPUT_MODE_SYNCTRIG == channelModes[channel]) {
+			if (channelSyncTriggerRequested[channel] && clockFrame) {
 				//trigger requested and lfo just warped : trigger !
-				this.channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
-				this.channelSyncedTriggerRequest[channel] = false;
+				channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
+				channelSyncTriggerRequested[channel] = false;
 			}
-			if (this.channelTrigCyles[channel] > 0) {
+			if (channelTrigCyles[channel] > 0) {
 				//printf("trig");
-				if (this.channelValues[channel] != 1) {
-			  		this.channelValues[channel] = 1;
-			  		this.channelTrigCyles[channel]--;
-					this.pixi.setChannelValue(channel, this.channelValues[channel]);
+				if (channelValues[channel] != 1) {
+			  		channelValues[channel] = 1;
+			  		channelTrigCyles[channel]--;
+					pixi.setChannelValue(channel, channelValues[channel]);
 				}
 			} else {
 				//printf("trig end");
-				if (this.channelValues[channel] != 0) {
-					this.channelValues[channel] = 0;
-					this.pixi.setChannelValue(channel, this.channelValues[channel]);
+				if (channelValues[channel] != 0) {
+					channelValues[channel] = 0;
+					pixi.setChannelValue(channel, channelValues[channel]);
 				}
 			}
 		
@@ -110,7 +110,7 @@ inline void Ports::pixiTimer() {
 				}
 			}
 			// range and offset
-			float lfo_offset = BIPOLAR_POWER ? 0.0 : ; // bipolar values are [-1 1], unipolar [0, 1]
+			float lfo_offset = BIPOLAR_POWER ? 0.0 : 0.5; // bipolar values are [-1 1], unipolar [0, 1]
 			float lfo_range = BIPOLAR_POWER ? 1.0 : 0.5; // bipolar values are [-1 1], unipolar [0, 1]
 
 			double phase = channelLFOPhases[channel];
@@ -228,7 +228,7 @@ void Ports::oscMessage(const char* path, float v) {
 				if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
 					channelTrigCyles[channel] = PORTS_TRIGGER_CYCLES;
 				}else if (PORTS_OUTPUT_MODE_SYNCTRIG == channelModes[channel]) {
-					channelSyncedTriggerRequested[channel] = true;
+					channelSyncTriggerRequested[channel] = true;
 				}
 				
 			}
@@ -300,7 +300,7 @@ bool Ports::channelIsLfo(int channel) {
 
 bool Ports::channelIsBipolar(int channel) {
   int modee = channelModes[channel];
-  return BIPOLAR_POWER && (!(modee < 50 || modee >= 100 && modee < 150));
+  return BIPOLAR_POWER && (!(modee < 50 || (modee >= 100 && modee < 150)));
 }
 
 
