@@ -84,9 +84,9 @@ inline void Ports::pixiTimer() {
 					//printf("trig start %d\n", channel);
 				}
 				channelTrigCycles[channel]--;
-				if (channelValues[channel] != 1) {
+				if (channelValues[channel] != PORTS_TRIGGER_LEVEL) {
 			  		//printf("trig set to one : %d\n",channel);
-					channelValues[channel] = 1;
+					channelValues[channel] = PORTS_TRIGGER_LEVEL;
 					pixi.setChannelValue(channel, channelValues[channel]);
 				}
 			} else {
