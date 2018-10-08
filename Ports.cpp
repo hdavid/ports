@@ -188,55 +188,60 @@ void Ports::oscMessage(const char* path, float v) {
 			std::cout << "rebooting";
 			system("reboot now\n");
 		}
-	} else if (strncmp(path, "/out/", 5)==0) {
+		
+		
+	} else if (strncmp(path, "/a/", 3)==0 
+		|| strncmp(path, "/b/", 3)==0 
+		|| strncmp(path, "/c/", 3)==0
+		|| strncmp(path, "/d/", 3)==0
+		|| strncmp(path, "/e/", 3)==0
+		|| strncmp(path, "/f/", 3)==0
+		|| strncmp(path, "/g/", 3)==0
+		|| strncmp(path, "/h/", 3)==0
+	) {
+
+		int bank = 0;
+	
+
+		if (strncmp(path, "/a/", 3)==0){
+			bank = 0;
+		} else if (strncmp(path, "/b/", 3)==0){
+			bank = 1;
+		} else if (strncmp(path, "/c/", 3)==0){
+			bank = 2;
+		} else if (strncmp(path, "/d/", 3)==0){
+			bank = 3;
+		} else if (strncmp(path, "/e/", 3)==0){
+			bank = 4;
+		} else if (strncmp(path, "/f/", 3)==0){
+			bank = 5;
+		} else if (strncmp(path, "/g/", 3)==0){
+			bank = 6;
+		} else if (strncmp(path, "/h/", 3)==0){
+			bank = 7;
+		}
+		int numBanks = 3;
+		if (bank + 1 > currentBank + numBanks) {
+			return;
+		}
+		offset += 3;
+		int channel = parseInt(path, offset);
+		offset += channel<10?2:channel<100?3:4;
+		channel += bank*8;
+		
+		channel -= 1;
+		if (channel >= 0 && channel<20){
+			handleChannelMsg(path,offset,channel, value);
+		} else {
+			std::cout << "invalid channel : " << path << "\n";
+		}
+	} else if (strncmp(path, "/out/", 5)==0)  {
 		offset += 5;
 		int channel = parseInt(path, offset);
-		if (channel > 0 && channel<=20){
-			offset += channel<10?2:channel<100?3:4;
-			channel -= 1;
-			int mode = parseOutputMode(path, offset);
-			bool force = false;
-			if (channelModes[channel] != mode) {
-				channelModes[channel] = mode;
-				force = true;
-			}
-			bool isBipolar = channelIsBipolar(channel);
-			if (channelIsLfo(channel)){
-				//lfo frequency clipping
-				if (value<0){
-					value = 0;
-				}
-				if (value>10000){
-					value = 10000;
-				}
-				channelLFOFrequencies[channel] = value;
-				pixi.setChannelMode(channel, false, isBipolar, force);
-			} else {
-				//value scaling
-				if (value > 1) {
-					value = 1;
-				}
-				if (channelIsBipolar(channel)){
-					if (value <= -1){
-						value = -1;
-					}
-				} else {
-					if (value < 0) {
-						value = 0;
-					}	
-				}
-				channelValues[channel] = value;
-				//change pixi mode
-				pixi.setChannelMode(channel, false, isBipolar, force);
-				pixi.setChannelValue(channel, value);
-				if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
-					channelTrigCycles[channel] = PORTS_TRIGGER_CYCLES;
-				}else if (PORTS_OUTPUT_MODE_SYNCTRIG == channelModes[channel]) {
-					channelSyncTriggerRequested[channel] = true;
-				}
-				
-			}
-			
+		offset += channel<10?2:channel<100?3:4;
+		channel -= 1;
+		if (channel >= 0 && channel<20){
+			handleChannelMsg(path,offset,channel, value);
 		} else {
 			std::cout << "invalid channel : " << path << "\n";
 		}
@@ -247,6 +252,50 @@ void Ports::oscMessage(const char* path, float v) {
 	}			
 }
 
+void Ports::handleChannelMsg(const char* path, int offset, int channel, float value){
+	int mode = parseOutputMode(path, offset);
+	bool force = false;
+	if (channelModes[channel] != mode) {
+		channelModes[channel] = mode;
+		force = true;
+	}
+	bool isBipolar = channelIsBipolar(channel);
+	if (channelIsLfo(channel)){
+		//lfo frequency clipping
+		if (value<0){
+			value = 0;
+		}
+		if (value>10000){
+			value = 10000;
+		}
+		channelLFOFrequencies[channel] = value;
+		pixi.setChannelMode(channel, false, isBipolar, force);
+	} else {
+		//value scaling
+		if (value > 1) {
+			value = 1;
+		}
+		if (channelIsBipolar(channel)){
+			if (value <= -1){
+				value = -1;
+			}
+		} else {
+			if (value < 0) {
+				value = 0;
+			}	
+		}
+		channelValues[channel] = value;
+		//change pixi mode
+		pixi.setChannelMode(channel, false, isBipolar, force);
+		pixi.setChannelValue(channel, value);
+		if (PORTS_OUTPUT_MODE_TRIG == channelModes[channel]) {
+			channelTrigCycles[channel] = PORTS_TRIGGER_CYCLES;
+		}else if (PORTS_OUTPUT_MODE_SYNCTRIG == channelModes[channel]) {
+			channelSyncTriggerRequested[channel] = true;
+		}
+		
+	}
+}
 
 int Ports::parseOutputMode(const char* str, int offset){
 	if (strncmp(str+offset, "gate", 4)==0) {
@@ -409,12 +458,3 @@ String Ports::channelGetModeName(int channel) {
   return out;
 }
 */
-
-
-
-
-
-
-
-
-

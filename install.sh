@@ -25,6 +25,24 @@ else
 	echo configure wap_supplicant to fall back onto $PORTS_HOSTNAME SSID
 	sudo tee -a /etc/wpa_supplicant/wpa_supplicant.conf >/dev/null <<DELIM
 
+network={
+	ssid="holon"
+	psk=""
+}
+network={
+	ssid="biomusic"
+	psk=""
+}
+network={
+	ssid="holon"
+	psk=""
+}
+network={
+	ssid="redpill"
+	psk=""
+}
+
+
 # put your own client mode networks above this access point mode
 network={
     ssid="$PORTS_HOSTNAME"
@@ -33,6 +51,7 @@ network={
     psk="portsports"
     frequency=2437
 }
+
 DELIM
 fi
 

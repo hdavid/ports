@@ -53,9 +53,11 @@ class Ports {
     void startOSC(int port);
 	void pixiTimer();
     void oscMessage(const char *path, const float value);
+	void handleChannelMsg(const char* str, int offset, int channel, float value);
     bool stop;
     bool restart;
   private:
+	  int currentBank = 0;
   	Pixi pixi;
   	MidiOutput midiOutput;
 	int channelModes[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
